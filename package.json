@@ -34,7 +34,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/castaly-ai/modelflare-mcp"
+    "url": "git+https://github.com/castaly-ai/modelflare-mcp.git"
   },
   "bugs": {
     "url": "https://github.com/castaly-ai/modelflare-mcp/issues"
