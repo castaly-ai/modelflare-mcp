@@ -1,12 +1,19 @@
 #!/usr/bin/env node
-// Builds modelflare-mcp-<version>.mcpb, an MCP Bundle (desktop extension) that
-// Claude Desktop installs directly and Smithery distributes as a local stdio
-// server. The server and all of its dependencies are bundled into one file, so
-// the bundle needs no node_modules.
+// Builds two MCP Bundles (desktop extensions) of the same server; both run it
+// as a local stdio server, with the server and all of its dependencies bundled
+// into one file so no node_modules ship:
+//
+//   modelflare-mcp-<version>.mcpb           MCPB-spec manifest, for Claude Desktop
+//   modelflare-mcp-<version>-smithery.mcpb  adds each tool's inputSchema, which
+//                                           Smithery requires but the MCPB spec
+//                                           (and `mcpb validate`/`mcpb pack`) rejects
+//
+// Needs Node 20.15 or later for zlib.crc32.
 import { execFileSync, spawn } from 'node:child_process'
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { crc32, deflateRawSync } from 'node:zlib'
 
 import { build } from 'esbuild'
 
@@ -16,6 +23,54 @@ const root = path.dirname(fileURLToPath(import.meta.url))
 const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
 const stage = path.join(root, 'mcpb-build')
 const output = path.join(root, `modelflare-mcp-${pkg.version}.mcpb`)
+const smitheryOutput = path.join(root, `modelflare-mcp-${pkg.version}-smithery.mcpb`)
+const BUNDLE_FILES = ['manifest.json', 'server/index.mjs', 'icon.png', 'LICENSE', 'README.md']
+
+// Minimal ZIP writer (deflate, no ZIP64) for the Smithery bundle, which
+// `mcpb pack` refuses to build.
+async function writeZip(target, directory, files) {
+  const locals = []
+  const centrals = []
+  let offset = 0
+  for (const name of files) {
+    const data = await readFile(path.join(directory, name))
+    const compressed = deflateRawSync(data)
+    const nameBytes = Buffer.from(name, 'utf8')
+    const checksum = crc32(data)
+    const local = Buffer.alloc(30)
+    local.writeUInt32LE(0x04034b50, 0)
+    local.writeUInt16LE(20, 4)
+    local.writeUInt16LE(0x0800, 6)
+    local.writeUInt16LE(8, 8)
+    local.writeUInt32LE(checksum, 14)
+    local.writeUInt32LE(compressed.length, 18)
+    local.writeUInt32LE(data.length, 22)
+    local.writeUInt16LE(nameBytes.length, 26)
+    const central = Buffer.alloc(46)
+    central.writeUInt32LE(0x02014b50, 0)
+    central.writeUInt16LE((3 << 8) | 20, 4)
+    central.writeUInt16LE(20, 6)
+    central.writeUInt16LE(0x0800, 8)
+    central.writeUInt16LE(8, 10)
+    central.writeUInt32LE(checksum, 16)
+    central.writeUInt32LE(compressed.length, 20)
+    central.writeUInt32LE(data.length, 24)
+    central.writeUInt16LE(nameBytes.length, 28)
+    central.writeUInt32LE((0o100644 << 16) >>> 0, 38)
+    central.writeUInt32LE(offset, 42)
+    locals.push(local, nameBytes, compressed)
+    centrals.push(central, nameBytes)
+    offset += local.length + nameBytes.length + compressed.length
+  }
+  const centralDirectory = Buffer.concat(centrals)
+  const end = Buffer.alloc(22)
+  end.writeUInt32LE(0x06054b50, 0)
+  end.writeUInt16LE(files.length, 8)
+  end.writeUInt16LE(files.length, 10)
+  end.writeUInt32LE(centralDirectory.length, 12)
+  end.writeUInt32LE(offset, 16)
+  await writeFile(target, Buffer.concat([...locals, centralDirectory, end]))
+}
 
 await rm(stage, { recursive: true, force: true })
 await mkdir(path.join(stage, 'server'), { recursive: true })
@@ -53,7 +108,9 @@ async function listTools() {
       for (const line of buffer.split('\n')) {
         if (!line.trim()) continue
         const message = JSON.parse(line)
-        if (message.id === 2) return message.result.tools.map((tool) => ({ name: tool.name, description: tool.description }))
+        if (message.id === 2) {
+          return message.result.tools.map((tool) => ({ name: tool.name, description: tool.description, inputSchema: tool.inputSchema }))
+        }
       }
     }
   } finally {
@@ -61,6 +118,8 @@ async function listTools() {
   }
   throw new Error('The built server did not answer tools/list.')
 }
+
+const serverTools = await listTools()
 
 const manifest = {
   manifest_version: '0.3',
@@ -93,7 +152,7 @@ const manifest = {
       },
     },
   },
-  tools: await listTools(),
+  tools: serverTools.map(({ name, description }) => ({ name, description })),
   user_config: {
     api_key: {
       type: 'string',
@@ -127,4 +186,7 @@ await copyFile(path.join(root, 'README.md'), path.join(stage, 'README.md'))
 
 execFileSync('npx', ['-y', MCPB_CLI, 'validate', path.join(stage, 'manifest.json')], { stdio: 'inherit' })
 execFileSync('npx', ['-y', MCPB_CLI, 'pack', stage, output], { stdio: 'inherit' })
-console.log(`Built ${path.relative(root, output)} with ${manifest.tools.length} tools`)
+
+await writeFile(path.join(stage, 'manifest.json'), `${JSON.stringify({ ...manifest, tools: serverTools }, null, 2)}\n`)
+await writeZip(smitheryOutput, stage, BUNDLE_FILES)
+console.log(`Built ${path.relative(root, output)} and ${path.relative(root, smitheryOutput)} with ${serverTools.length} tools`)

@@ -38,7 +38,7 @@ Add the server to your MCP client:
 | `MODELFLARE_OUTPUT_DIR` | where images and videos are saved (default `./modelflare-output`) |
 | `MODELFLARE_LOCALE` | `en` (default) or `zh` for error messages |
 
-**Claude Desktop:** download `modelflare-mcp-<version>.mcpb` from [Releases](https://github.com/castaly-ai/modelflare-mcp/releases) and open it; Claude Desktop asks for the API key, base URL and output folder. `node build-mcpb.mjs` rebuilds the bundle.
+**Claude Desktop:** download `modelflare-mcp-<version>.mcpb` from [Releases](https://github.com/castaly-ai/modelflare-mcp/releases) and open it; Claude Desktop asks for the API key, base URL and output folder. `modelflare-mcp-<version>-smithery.mcpb` is the same bundle with each tool's `inputSchema` in the manifest, as Smithery requires. `node build-mcpb.mjs` rebuilds both.
 
 ## Tools / 工具
 
