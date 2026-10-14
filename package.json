@@ -1,0 +1,35 @@
+{
+  "name": "@modelflare/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for Modelflare image and video generation: one Smart API Key for every image and video model available to your account.",
+  "license": "MIT",
+  "author": "Havenbyte LLC",
+  "homepage": "https://modelflare.dev/sign-up?utm_source=mcp-registry&utm_medium=plugin&utm_campaign=integrations",
+  "mcpName": "io.github.castaly-ai/mcp-server",
+  "type": "module",
+  "bin": {
+    "modelflare-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.3"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "pack:check": "npm run build && npm pack --dry-run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.1",
+    "esbuild": "0.28.2",
+    "typescript": "6.0.3"
+  }
+}

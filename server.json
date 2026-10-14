@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.castaly-ai/mcp-server",
+  "title": "Modelflare",
+  "description": "Image and video generation with one Modelflare Smart API Key.",
+  "websiteUrl": "https://modelflare.dev/sign-up?utm_source=mcp-registry&utm_medium=plugin&utm_campaign=integrations",
+  "repository": {
+    "url": "https://github.com/castaly-ai/modelflare-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@modelflare/mcp-server",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "MODELFLARE_API_KEY",
+          "description": "Modelflare Smart API Key (create one at https://modelflare.dev/keys)",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "MODELFLARE_BASE_URL",
+          "description": "global (default), china, or a custom base URL",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "MODELFLARE_OUTPUT_DIR",
+          "description": "Directory for generated images and videos (default ./modelflare-output)",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
