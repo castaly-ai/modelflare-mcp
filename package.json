@@ -4,7 +4,7 @@
   "description": "MCP server for Modelflare image and video generation: one Smart API Key for every image and video model available to your account.",
   "license": "MIT",
   "author": "Havenbyte LLC",
-  "homepage": "https://modelflare.dev/sign-up?utm_source=mcp-registry&utm_medium=plugin&utm_campaign=integrations",
+  "homepage": "https://modelflare.dev",
   "mcpName": "io.github.castaly-ai/mcp-server",
   "type": "module",
   "bin": {
@@ -31,5 +31,12 @@
     "@types/node": "25.9.1",
     "esbuild": "0.28.2",
     "typescript": "6.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/castaly-ai/modelflare-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/castaly-ai/modelflare-mcp/issues"
   }
 }
